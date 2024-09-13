@@ -1,8 +1,12 @@
+import { RequestHandler } from 'express';
 import fs from 'fs'
 import path from 'path'
+import Urls from './urls';
+import { IData } from '../types/data';
 // const path = 'functions/data.json'
 
 const dataPath = path.join(__dirname, 'data.json');
+const urls = new Urls()
 
 type jsonData = {
   currentMantenedUrl: string,
@@ -11,11 +15,10 @@ type jsonData = {
   hightMenssages: boolean
 }
 
-async function getData() {
+async function getData(): Promise<IData> {
     const data = await fs.readFileSync(dataPath, 'utf8')
 
     return JSON.parse(data)
-
 }
 
 type keys = 'currentMantenedUrl' | 'currentMantenedName' | 'off' | 'hightMenssages'
@@ -23,7 +26,7 @@ type keys = 'currentMantenedUrl' | 'currentMantenedName' | 'off' | 'hightMenssag
 async function write(key: keys, value: string | boolean) {
     
     try {
-        const dados = await getData()
+        const dados:any = await getData()
 
         dados[key] = value
         
@@ -37,14 +40,7 @@ async function write(key: keys, value: string | boolean) {
       }
 }
 
-
-async function sendInfos(req:any, res:any) {
-    const data = await getData()
-    
-    res.send(data.currentMantenedName)
-}
-
-export { sendInfos, getData, write }
+export { getData, write }
 
 // base: 
 // {
