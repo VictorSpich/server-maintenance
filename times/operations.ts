@@ -1,20 +1,26 @@
-import e from "express"
-import { getData, write } from "../functions/manegeData"
 import { callThis } from "../functions/schedule"
 import { sendTelegramMensage } from "../functions/sendToPhone"
 import { maxTimeAvaliable, thirteenMinutes } from "../global"
-import { getTimeData, writeTimeInfo } from "./manegeTimeJson"
-import { getHoursAndMinutesRemanig, getRemanigTimeFor, timeStampToHourAndMinute } from "../utils/time"
+
+import { sendUsagesToPhoneOnStart } from "../utils/time"
 import Urls from "../functions/urls"
 import { turnOff } from "../controllers/actions.controller"
+import { getData } from "../services/apis.service"
+import { getTimeData, multipleWriteTimeIfo, writeTimeInfo } from "../services/times.service"
 
 
 
-export const resetAccountsTime = () => {
-    writeTimeInfo("lastStart", null)
-    writeTimeInfo("lastDiscount", null)
-    writeTimeInfo("usageMainAccount", 0)
-    writeTimeInfo("usageThisAccount", 0)
+export const resetAccountsTime = async () => {
+    await multipleWriteTimeIfo({
+        "lastStart": null,
+        "lastDiscount": null,
+        "usageMainAccount": 0,
+        "usageThisAccount": 0
+    })
+    // await writeTimeInfo("lastStart", null)
+    // await writeTimeInfo("lastDiscount", null)
+    // await writeTimeInfo("usageMainAccount", 0)
+    // await writeTimeInfo("usageThisAccount", 0)
 }
 
 
@@ -25,9 +31,10 @@ var times = 0
  * * Se tiver ligado outro, ele desativa as chamadas desse, não precisa se já é chamdo no schedule
  */
 export const keepThisOn = async () => {
-    const timeInfo = getTimeData()
+    const timeInfo = await getTimeData()
 
-    if (maxTimeAvaliable < timeInfo.usageThisAccount / 1000 / 60 / 60)
+    // if (maxTimeAvaliable < timeInfo.usageThisAccount / BigInt(1000 / 60 / 60))
+    if (maxTimeAvaliable < timeInfo.usageThisAccount / BigInt(1000 * 60 * 60))
         return sendTelegramMensage("FIM DO TEMPO PARA A API")
 
     if (!timeInfo.keepThisApiOn)
@@ -43,36 +50,32 @@ export const keepThisOn = async () => {
     //
 
     if (!timeInfo.lastStart) {
-        writeTimeInfo("lastStart", now)
+        await writeTimeInfo("lastStart", now)
     }
 
-    if (timeInfo.lastDiscount) {
-        discountFromThisAccountTime()
-    }
+    // if (timeInfo.lastDiscount) {
+    //     discountFromThisAccountTime()
+    // }
 
-    writeTimeInfo("lastDiscount", now)
 
-    !timeInfo.alreadyStartedThis ?  writeTimeInfo("alreadyStartedThis", true) : ""
+    // (!timeInfo.alreadyStartedThis) ? await writeTimeInfo("alreadyStartedThis", true) : ""
 
 
     const configs = await getData()
 
-    //n]ao entendi pq isso
-    // if (configs.currentMantenedName == "Nenhum Selecionado")
-        callThis()
+    callThis()
 
-    discountFromApis()
+    // discountFromApis()
 
-    if (configs.hightMenssages)
-        sendTelegramMensage("API principal chamada")
+    if (configs?.hightMenssages)
+        sendTelegramMensage("[HIGH] API principal chamada")
 
-    // setTimeout(() => keepThisOn(), thirteenMinutes)
-    setTimeout(() => keepThisOn(), 13_000 * 60 * 1)
+    setTimeout(() => keepThisOn(), thirteenMinutes / 3)
 }
 
 
-export const getMonthAndUpdate = () => {
-    var storageMonth = getTimeData().currentMonth
+export const getMonthAndUpdate = async () => {
+    let storageMonth = (await getTimeData()).currentMonth
     const now = new Date()
 
     if (now.getMonth() == storageMonth)
@@ -81,28 +84,39 @@ export const getMonthAndUpdate = () => {
 
     resetAccountsTime()
 
-    var newMouth = now.getMonth()
+    let newMouth = now.getMonth()
     writeTimeInfo("currentMonth", newMouth)
+
+    sendTelegramMensage("Novo mês, novo tempo!")
 
     return newMouth
 }
 
 
-export const StartKeepApiOnMode = () => {
-    const isAlreadyStarted = getTimeData().alreadyStartedThis
+export const StartKeepApiOnMode = async () => {
+    const isAlreadyStarted = (await getTimeData()).alreadyStartedThis
 
     //não precisa ficar inicindo
+    console.log(isAlreadyStarted)
     if (isAlreadyStarted)
         return
 
 
-    const now = Date.now()
     times = 0
 
-    writeTimeInfo("keepThisApiOn", true)
-    writeTimeInfo("lastDiscount", Date.now())
 
+    multipleWriteTimeIfo({
+        "keepThisApiOn": true,
+        "lastDiscount": Date.now(),
+        //novos, tirados do keep this on
+        "lastStart": Date.now(),
+        "alreadyStartedThis": true,
+    })
+    
+    sendUsagesToPhoneOnStart()
 
+    const currentMonth = await getMonthAndUpdate()
+    console.log(currentMonth)
     keepThisOn()
 }
 
@@ -111,35 +125,36 @@ export const StartKeepApiOnMode = () => {
  */
 export const discountFromMainAccountTime = async () => {
     const config = await getData()
-    if (config.currentMantenedName == "Nenhum Selecionado")
+    if (config?.currentMantenedName == "Nenhum Selecionado")
         return
 
 
     const now = Date.now()
 
-    const timeInfo = getTimeData()
+    const timeInfo = await getTimeData()
 
     if (!timeInfo.lastDiscount)
         return
 
+    await writeTimeInfo("lastDiscount", now)
 
     var difference = now - Number(timeInfo.lastDiscount)
 
-    if (config.currentMantenedName == 'all')
+    if (config?.currentMantenedName == 'all')
         difference *= (new Urls()).urls.length
 
     console.log("Diferença: " + difference)
 
-    writeTimeInfo("usageMainAccount", timeInfo.usageMainAccount + difference)
+    writeTimeInfo("usageMainAccount", Number(timeInfo.usageMainAccount) + difference)
 }
 
 
-export const discountFromThisAccountTime = () => {
+export const discountFromThisAccountTime = async () => {
     const now = Date.now()
 
-    const timeInfo = getTimeData()
+    const timeInfo = await getTimeData()
 
-    writeTimeInfo("lastDiscount", now)
+    await writeTimeInfo("lastDiscount", now)
 
     if (!timeInfo.lastDiscount)
         return
@@ -148,7 +163,7 @@ export const discountFromThisAccountTime = () => {
     const difference = now - Number(timeInfo.lastDiscount)
 
 
-    writeTimeInfo("usageThisAccount", timeInfo.usageThisAccount + difference)
+    writeTimeInfo("usageThisAccount", Number(timeInfo.usageThisAccount) + difference)
 }
 
 
@@ -158,17 +173,17 @@ export const discountFromThisAccountTime = () => {
  * Essa que realmente diminui os dados
  */
 export const discountFromApis = async () => {
-    const timeInfo = getTimeData()
+    const timeInfo = await getTimeData()
     const config = await getData()
 
 
-    //nada ocorreu para ter que descontar
-    if (!timeInfo.keepThisApiOn && config.off)
+    //nada ocorrendo para ter que descontar
+    if (!timeInfo.keepThisApiOn && config?.off)
         return
 
     const now = Date.now()
 
-    writeTimeInfo("lastDiscount", now)
+    await writeTimeInfo("lastDiscount", now)
 
     if (!timeInfo.lastDiscount)
         return
@@ -176,27 +191,23 @@ export const discountFromApis = async () => {
 
     const differenceForThis = now - Number(timeInfo.lastDiscount)
 
-    writeTimeInfo("usageThisAccount", timeInfo.usageThisAccount + differenceForThis)
+    await writeTimeInfo("usageThisAccount", Number(timeInfo.usageThisAccount) + differenceForThis)
 
-    if (config.currentMantenedName == "Nenhum Selecionado")
+    if (config?.currentMantenedName == "Nenhum Selecionado")
         return
 
 
     let differenceForMain = now - Number(timeInfo.lastDiscount)
 
-    if (config.currentMantenedName == "all")
+    if (config?.currentMantenedName == "all")
         differenceForMain *= (new Urls()).urls.length
 
-    writeTimeInfo("usageMainAccount", timeInfo.usageMainAccount + differenceForMain)
+    await writeTimeInfo("usageMainAccount", Number(timeInfo.usageMainAccount) + differenceForMain)
 }
 // export const discountFromApis = () => {
 //     discountFromMainAccountTime()
 //     discountFromThisAccountTime()
 // }
-
-
-
-
 
 /**
  * Chamar para desligar e parar de contar

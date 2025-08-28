@@ -3,12 +3,14 @@ const schedule = require('node-schedule')
 import wrongUrls from './verify'
 import formatMensageAndSend, { sendTelegramMensage } from './sendToPhone'
 import Urls from "./urls"
-import { getData } from './manegeData'
+
 import { StartKeepApiOnMode } from '../times/operations'
+import { getData } from '../services/apis.service'
+import { thisUrl } from '../global'
 const data = new Urls()
 
 
-const thisUrl = process.env.DEV == "true" ? "http://localhost:2009" : 'https://server-maintenance-ssu7.onrender.com'
+
 // const thisUrl = 'https://server-maintenance.onrender.com'//old
 
 var times = 0
@@ -61,32 +63,6 @@ export async function makeRecursiveRequest(UseStoraged = false, url = '', count:
 }
 
 
-/**
- * 
- * 
- * @returns 1 (sucesso) ou 0 (erro de timeout 5s ou outro)
- */
-export const makeOneRequest = async (url: string, name: string="", erros: string[], timeOut=10_000) => {
-    try {
-        const res = await axios(url + "/teste", {
-            timeout: timeOut
-        })
-    
-        if(res.status < 300) {
-            return 1
-        }
-
-        erros?.push(name)
-        return 0
-    } catch(e) {
-        const error = e as AxiosError//erro aqui
-        console.log(error.message)
-        console.log("⬆️ Erro ao fazer 1 requeset para "+ url)
-        erros?.push(name)
-        return 0
-    }
-}
-
 
 
 async function selectTimer(send: boolean = false) {
@@ -99,34 +75,17 @@ async function selectTimer(send: boolean = false) {
 
 
     if(obj.off) {
-        sendTelegramMensage('Desligando servidor (obj.off == true)')
+        sendTelegramMensage('Sem requisição para APIs (obj.off == true)')
         if(send) sendTelegramMensage('Desativado')
         return
     }
     
-    
+    // const res = await makeInitialRequests()
 
-    //varias requests(iniciais)
-    var vezes = 0
-    if(first) {
-        var firstRequests = setInterval(async () => {
-            vezes++
-            if(vezes > 10) {
-                sendTelegramMensage('Nã foi possível fazer o Initial Request')
-                clearInterval(firstRequests)
-            }
-            //requests e tratemento
-            const res = await makeInitialRequests()
-            if(res) {
-                first = false
-                sendTelegramMensage('Fisrt feito em: '+  name)
-                clearInterval(firstRequests)
-            }
-        }, 3000)
-    }
 
-    // callThis()
+
     StartKeepApiOnMode()
+    
 
     setTimeout(()=> {
         if(obj.hightMenssages) 
@@ -136,11 +95,11 @@ async function selectTimer(send: boolean = false) {
 
         if(rightHours && min > 0 && min < 14) {// 11 = 8horas no Brasil
             selectTimer(true)
-            sendTelegramMensage('SelectTimer '+ hour + ' : ' +min)
+            sendTelegramMensage('Mensagem programada: '+ hour + ' : ' + min)
            
         } else selectTimer()
 
-    }, 1000 * 60 * 12)
+    }, 1000 * 60 * 10)
 
 
     //para não consumir, desligar em testes
@@ -154,15 +113,15 @@ async function selectTimer(send: boolean = false) {
     const res = await axios.get(obj.currentMantenedUrl+ '/teste')
 
     if(send && typeof res.data == 'string') 
-        sendTelegramMensage('Funcionando ' + name)
+        sendTelegramMensage('[HIGH] Funcionando ' + name)
 
     if(send && typeof res.data != 'string') 
         sendTelegramMensage('Erro em: ' + name)
 }
 
 
-if(process.env.NOT_REQ!="true")
-    selectTimer(true)
+
+selectTimer(true)
 
 
 const ruleRelatory = {

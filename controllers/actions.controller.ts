@@ -1,46 +1,44 @@
 import { Request, RequestHandler, Response } from "express"
-import { write } from "../functions/manegeData"
-import { makeOneRequest, makeRecursiveRequest, selectTimer } from "../functions/schedule"
 import { sendTelegramMensage } from "../functions/sendToPhone"
 import Urls from "../functions/urls"
 import { setKeepApiOn } from "../utils/time"
+import { write } from "../services/apis.service"
+import { isAllWorking, makeOneRequest } from "../utils/requestsToApi"
+import { selectTimer } from "../functions/schedule"
+import axios from "axios"
 
 const data = new Urls()
 
 
-//veio de schedule
-export async function forceLoadAllOnce(req: any, res: any) {
-    const urls = data.urls
-    var successUrlsCount = 0
-    var times = 0
 
-    urls.forEach(async (url) => {
-        const responseFromRecursive = await makeRecursiveRequest(false, url, successUrlsCount)
-        successUrlsCount = Number(responseFromRecursive)
-    })
-    const interval = setInterval(() => {
-        if (successUrlsCount >= urls.length) {
-            res.send('Todas as reqs foram feitas')
-            sendTelegramMensage('Todas as reqs foram feitas')
-            clearInterval(interval)
-        }
-        times++
-        if (times > 20) {
-            res.send("Erro no req de todos")
-            sendTelegramMensage('Erro no req de todos')
-            clearInterval(interval)
-        }
-    }, 1000)
+export async function forceLoadAllOnce(req: any, res: any) {
+    const errorsNames: string[] = []
+    const ten = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    let finsih = false
+
+    sendTelegramMensage("Iniciando Req de todos")
+
+
+    await Promise.all(ten.map(async () => {
+        if (finsih)
+            return
+
+        const isAllCorrect = await isAllWorking(errorsNames)
+
+        if (isAllCorrect)
+            finsih = true
+    }))
+
+
+    if (finsih)
+        return sendTelegramMensage("Todas funcionando!")
+
+
+    sendTelegramMensage("[Forçar] Erro no req de todos - 10 vezes")
 }
 
-
 export async function setOne(index: number, res: any) {
-    console.log('Index: ' + index)
-    console.log('Nome: ' + data.getApi(index))
-
     let url = data.getUrl(index)
-
-    // const resApi = await axios.get(url+'/teste')
 
     await write('currentMantenedUrl', url)
     await write('currentMantenedName', data.getApi(index))
@@ -90,11 +88,11 @@ export const callAllOnce: RequestHandler = async (req, res) => {
     let successUrlsCount = 0
 
 
-    let results = [1, 1, 1, 1]
-    if (process.env.NOT_REQ != "true")
-        results = await Promise.all(urls.map(async (url, i) => {
-            return await makeOneRequest(url, data.getApi(i), errorsNames)
-        }))
+    let results: any[] = [1, 1, 1, 1]
+
+    results = await Promise.all(urls.map(async (url, i) => {
+        return await makeOneRequest(url, data.getApi(i), errorsNames)
+    }))
 
 
     results.forEach(result => successUrlsCount += result)
@@ -116,7 +114,7 @@ export const callAllOnceSimple: RequestHandler = async (req, res) => {
     // const urls = ['https://portfolio-api-i3t0.onrender.com']
     let successUrlsCount = 0
 
-    let results = [1, 0, 0]
+    let results: any[] = [1, 0, 0]
     if (process.env.NOT_REQ != "true") {
         results = await Promise.all(urls.map(async (url, i) => {
             return await makeOneRequest(url, data.getApi(i), errorsNames, 4_000)
@@ -130,4 +128,31 @@ export const callAllOnceSimple: RequestHandler = async (req, res) => {
         isAllWorking: successUrlsCount == urls.length,
         working: successUrlsCount,
     })
+}
+
+
+/**
+ * 
+ * * Vai retornar o Nome dele ou um Status 500
+ */
+export const testOne: RequestHandler = async (req, res) => {
+    const { id } = req.params
+
+    const url = data.getApiUrlById(Number(id))
+    console.log(url)
+    try {
+        if (process.env.NOT_REQ != "true") {
+            const respose = await axios(url + "/teste", { timeout: 7_000 })
+
+            res.send(`${data.getApi(Number(id))}`)
+        }
+        else {
+            setTimeout(() => {
+                res.send(data.getApi(Number(id)) + "[FAKE]")
+            }, 5000)
+        }
+
+    } catch {
+        res.status(500).send("Tempo excedido")
+    }
 }
