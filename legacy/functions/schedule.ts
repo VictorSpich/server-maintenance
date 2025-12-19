@@ -1,6 +1,5 @@
-import axios, {AxiosError} from 'axios'
+import axios from 'axios'
 
-const schedule = require('node-schedule')
 import wrongUrls from '../../functions/verify'
 import formatMensageAndSend, {sendTelegramMensage} from '../../lib/sendToPhone'
 import Urls from "../../functions/urls"
@@ -103,16 +102,7 @@ async function selectTimer(send: boolean = false) {
 }
 
 
-// selectTimer(true)//TODO:COMENTEI ESSE E ADICIONEI AO PROGRAM
-
-
-const ruleRelatory = {
-    hour: 14,
-    minute: 30,
-    second: 0
-}
-
-const jobRelatory = schedule.scheduleJob(ruleRelatory, () => selectTimer(true))
+// selectTimer(true)//TODO:COMENTEI ESSE E ADICIONEI AO INDEX.TS
 
 
 export {selectTimer}

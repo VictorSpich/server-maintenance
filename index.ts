@@ -7,8 +7,6 @@ import './legacy/functions/schedule'
 import {routes} from "./config/routes"
 import {configDotenv} from 'dotenv'
 import {baseConfigForTimeOnStart} from "./legacy/times/operations"
-import {sendUsagesToPhone} from "./utils/time"
-import {selectTimer} from "./legacy/functions/schedule";
 import "./functions/interval"
 import {Alert} from "./lib/sendAlerts";
 

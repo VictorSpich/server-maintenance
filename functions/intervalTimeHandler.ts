@@ -10,12 +10,11 @@ export const checkTimeAndSendAlert = async (count: number) => {
         await sendTelegramMessageFormatted("[ Time Alert ] Running: " + count + " times")
 
     const now = new Date()
-    const min = now.getMinutes()
+    const minute = now.getMinutes()
     const hour = now.getHours()
     const rightHours = hour == 11 || hour == 15 || hour == 22
-
-    if (rightHours && min > 0 && min < intervalInMinute + intervalInMinute / 2) {
-        await sendTelegramMessageFormatted("[ Time Alert ] Running: " + hour + " : " + min)
+    if (rightHours && minute > 0 && minute < intervalInMinute + intervalInMinute / 2) {
+        await sendTelegramMessageFormatted("[ Time Alert ] Running: " + hour + " : " + minute)
     }
 }
 
