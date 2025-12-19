@@ -1,10 +1,10 @@
 import { RequestHandler } from "express"
-import { sendTelegramMensage } from "../functions/sendToPhone"
-import { resetAccountsTime } from "../times/operations"
+import { sendTelegramMensage } from "../lib/sendToPhone"
+import { resetAccountsTime } from "../legacy/times/operations"
 
 
-export const resetTime:RequestHandler = (req, res) => {
-    resetAccountsTime()
+export const resetTime:RequestHandler = async (req, res) => {
+    await resetAccountsTime()
 
     res.send("Tempos zerados")
 }
@@ -17,6 +17,6 @@ export const requestWithLongTimeout:RequestHandler = (req, res) => {
 
 export const testTelegramSendMessage:RequestHandler = (req, res) => {
     sendTelegramMensage("Testando envio de mensagem")
-    
+
     res.sendStatus(202)
 }

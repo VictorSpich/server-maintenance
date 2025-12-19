@@ -3,7 +3,7 @@ import { informateNewIpAccess } from "../utils/ip"
 import { getHightmenssagesStatus, sendInfosPage, toggleHightMenssages } from "../utils/menssages"
 import { sendInfos, sendInfosById } from "../controllers/infos.controller"
 import { callAllOnce, callAllOnceSimple, forceLoadAllOnce, setAll, setOne, testOne, turnOff } from "../controllers/actions.controller"
-import { getBothRemaningTime, getLastDiscount, getLastStart, getRemanigTimeForMain, getRemanigTimeForThis, getThisStatus, setValueTime, turnKeepApiOn, turnOffThisApiController, updateUsageMiddleware } from "../controllers/times.controller"
+import { getBothRemainingTime, getLastDiscount, getLastStart, getRemainingTimeForMain, getRemainingTimeForThis, getThisStatus, setValueTime, turnKeepApiOn, turnOffThisApiController, updateUsageMiddleware } from "../controllers/times.controller"
 import { requestWithLongTimeout, resetTime, testTelegramSendMessage } from "../controllers/tests.controller"
 
 const routes = Router()
@@ -18,7 +18,7 @@ routes.get('/', (req, res) => res.send('Olá'))
 
 routes.get('/teste', (req, res) => res.send('olá'))
 //teste geral, não é o modo
-routes.get('/isOn', (req, res) => res.send("Está funcionando"))
+routes.get('/isOn', (req, res) => res.send("It's working"))
 
 routes.get('/testar', (req, res) => {
     console.log('testado')
@@ -36,6 +36,7 @@ routes.get('/lista', async (req, res) => setOne(2, res))
 routes.get('/paginacao', async (req, res) => setOne(3, res))
 routes.get('/z', async (req, res) => setOne(4, res))
 routes.get('/velha', async (req, res) => setOne(5, res))
+routes.get('/million', async (req, res) => setOne(6, res))
 // routes.get('/olx', async (req, res) => setOne(4, res))
 routes.get('/all', async (req, res) => setAll(res))
 routes.get('/turnoff', turnOff)
@@ -76,9 +77,9 @@ routes.get('/callAllOnce/force', callAllOnceSimple)
 //tempo
 // routes.use('/usage', updateUsageMiddleware)
 routes.use("/usage", updateUsageMiddleware)
-routes.get('/usage/both', getBothRemaningTime)
-routes.get('/usage/this',getRemanigTimeForThis)
-routes.get('/usage/main',getRemanigTimeForMain)
+routes.get('/usage/both', getBothRemainingTime)
+routes.get('/usage/this',getRemainingTimeForThis)
+routes.get('/usage/main',getRemainingTimeForMain)
 
 routes.get('/keepApiOn', turnKeepApiOn)
 routes.get("/turnOffThis", turnOffThisApiController)

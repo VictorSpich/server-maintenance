@@ -1,11 +1,11 @@
 import axios from 'axios'
-import wrongUrls from './verify'
+import wrongUrls from '../functions/verify'
 
 const telegramBotToken = '6746265132:AAHesfWPU4GGxYyWqnbDZSriNnkFcbRFi0E'
 
 async function sendTelegramMensage(mensagem: string): Promise<void> {
-  if(process.env.NOT_SEND=="true") 
-    return
+  if(process.env.NOT_SEND=="true")
+    return console.log(mensagem)
 
   const chatId = '1139085287'
 
@@ -38,13 +38,25 @@ async function sendTelegramMensage(mensagem: string): Promise<void> {
 }
 
 
-function formatMensageAndSend(obj: object,times?: number, onlyReturn = false) {
+export async function sendTelegramMessageFormatted(message: string, header: string = "SERVER MAINTENANCE") {
+    const messageFormatted = `      [ ${header.toUpperCase()} ]
+    
+${message}
+    
+            [ SM ]
+    `
+    return await sendTelegramMensage(messageFormatted)
+}
+
+
+
+function formatMessageAndSend(obj: object, times?: number, onlyReturn = false) {
     if(Object.keys(obj).length == 0) {
         if(onlyReturn) return 'Tudo funcionando nos conformes'
 
         sendTelegramMensage('Tudo funcionando nos conformes. Vez: '+ times)
     }
-    
+
     const apisNames = Object.keys(obj)
     const apisUrls = Object.values(obj)
 
@@ -61,4 +73,4 @@ function formatMensageAndSend(obj: object,times?: number, onlyReturn = false) {
 }
 
 export { sendTelegramMensage }
-export default formatMensageAndSend
+export default formatMessageAndSend

@@ -7,21 +7,23 @@ export default class Urls{
 
     constructor() {
         this.urls = [
-            'https://portfolio-api-i3t0.onrender.com',
+            'https://portfolio-api-i3t0.onrender.com',//0
             'https://vss-artigos-backend.onrender.com',
             'https://lista-mercado-api.onrender.com',
             'https://pagination-api-ugwo.onrender.com',
             "https://z-backend-t3zn.onrender.com",
-            "https://tic-tac-toe-online-backend-jjv9.onrender.com"
+            "https://tic-tac-toe-online-backend-jjv9.onrender.com",
+            "https://million-show-api.onrender.com",//6
         ]
 
         this.apis = [
-            'Portfolio Api',
+            'Portfolio Api',//0
             'VSS Artigos',
             'Lista Mercado',
             'Paginação',
             "Z",
-            "Velha"
+            "Velha",
+            "Million",//6
         ]
 
         this.ignoreIndex = [1, 2]

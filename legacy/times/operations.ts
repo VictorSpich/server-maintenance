@@ -1,12 +1,12 @@
 import { callThis } from "../functions/schedule"
-import { sendTelegramMensage } from "../functions/sendToPhone"
-import { maxTimeAvaliable, thirteenMinutes } from "../global"
+import {sendTelegramMensage, sendTelegramMessageFormatted} from "../../lib/sendToPhone"
+import { maxTimeAvaliable, thirteenMinutes } from "../../global"
 
-import { sendUsagesToPhoneOnStart } from "../utils/time"
-import Urls from "../functions/urls"
-import { turnOff } from "../controllers/actions.controller"
-import { getData } from "../services/apis.service"
-import { getTimeData, multipleWriteTimeIfo, writeTimeInfo } from "../services/times.service"
+import { sendUsagesToPhone } from "../../utils/time"
+import Urls from "../../functions/urls"
+import { turnOff } from "../../controllers/actions.controller"
+import { getData } from "../../services/apis.service"
+import { getTimeData, multipleWriteTimeIfo, writeTimeInfo } from "../../services/times.service"
 
 
 
@@ -17,23 +17,18 @@ export const resetAccountsTime = async () => {
         "usageMainAccount": 0,
         "usageThisAccount": 0
     })
-    // await writeTimeInfo("lastStart", null)
-    // await writeTimeInfo("lastDiscount", null)
-    // await writeTimeInfo("usageMainAccount", 0)
-    // await writeTimeInfo("usageThisAccount", 0)
 }
 
 
-var times = 0
+let times = 0
 /**
- * * Já cuida de deixar essa ligada,     
- * * Só para se acabar o tempo ou setar keepThisOn == false     
+ * * Já cuida de deixar essa ligada,
+ * * Só para se acabar o tempo ou setar keepThisOn == false
  * * Se tiver ligado outro, ele desativa as chamadas desse, não precisa se já é chamdo no schedule
  */
 export const keepThisOn = async () => {
     const timeInfo = await getTimeData()
 
-    // if (maxTimeAvaliable < timeInfo.usageThisAccount / BigInt(1000 / 60 / 60))
     if (maxTimeAvaliable < timeInfo.usageThisAccount / BigInt(1000 * 60 * 60))
         return sendTelegramMensage("FIM DO TEMPO PARA A API")
 
@@ -43,32 +38,23 @@ export const keepThisOn = async () => {
 
     const now = Date.now()
 
-    //debugg
+    //debug
     times++
     const formated = (new Date(now)).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })
     console.log("Execução " + times + " - " + formated)
-    //
 
     if (!timeInfo.lastStart) {
         await writeTimeInfo("lastStart", now)
     }
 
-    // if (timeInfo.lastDiscount) {
-    //     discountFromThisAccountTime()
-    // }
-
-
-    // (!timeInfo.alreadyStartedThis) ? await writeTimeInfo("alreadyStartedThis", true) : ""
-
-
     const configs = await getData()
 
-    callThis()
+    await callThis()
 
     // discountFromApis()
 
     if (configs?.hightMenssages)
-        sendTelegramMensage("[HIGH] API principal chamada")
+        await sendTelegramMensage("[HIGH] API principal chamada")
 
     setTimeout(() => keepThisOn(), thirteenMinutes / 3)
 }
@@ -82,12 +68,12 @@ export const getMonthAndUpdate = async () => {
         return storageMonth
 
 
-    resetAccountsTime()
+    await resetAccountsTime()
 
     let newMouth = now.getMonth()
-    writeTimeInfo("currentMonth", newMouth)
+        await writeTimeInfo("currentMonth", newMouth)
 
-    sendTelegramMensage("Novo mês, novo tempo!")
+    await sendTelegramMessageFormatted("Novo mês, novo tempo!")
 
     return newMouth
 }
@@ -96,27 +82,15 @@ export const getMonthAndUpdate = async () => {
 export const StartKeepApiOnMode = async () => {
     const isAlreadyStarted = (await getTimeData()).alreadyStartedThis
 
-    //não precisa ficar inicindo
-    console.log(isAlreadyStarted)
+    //não precisa ficar iniciando
     if (isAlreadyStarted)
         return
 
-
     times = 0
 
+    await sendUsagesToPhone()
 
-    multipleWriteTimeIfo({
-        "keepThisApiOn": true,
-        "lastDiscount": Date.now(),
-        //novos, tirados do keep this on
-        "lastStart": Date.now(),
-        "alreadyStartedThis": true,
-    })
-    
-    sendUsagesToPhoneOnStart()
-
-    const currentMonth = await getMonthAndUpdate()
-    console.log(currentMonth)
+    await getMonthAndUpdate()
     keepThisOn()
 }
 
@@ -138,14 +112,12 @@ export const discountFromMainAccountTime = async () => {
 
     await writeTimeInfo("lastDiscount", now)
 
-    var difference = now - Number(timeInfo.lastDiscount)
+    let difference = now - Number(timeInfo.lastDiscount)
 
     if (config?.currentMantenedName == 'all')
         difference *= (new Urls()).urls.length
 
-    console.log("Diferença: " + difference)
-
-    writeTimeInfo("usageMainAccount", Number(timeInfo.usageMainAccount) + difference)
+    await writeTimeInfo("usageMainAccount", Number(timeInfo.usageMainAccount) + difference)
 }
 
 
@@ -163,7 +135,7 @@ export const discountFromThisAccountTime = async () => {
     const difference = now - Number(timeInfo.lastDiscount)
 
 
-    writeTimeInfo("usageThisAccount", Number(timeInfo.usageThisAccount) + difference)
+    await  writeTimeInfo("usageThisAccount", Number(timeInfo.usageThisAccount) + difference)
 }
 
 
@@ -212,20 +184,13 @@ export const discountFromApis = async () => {
 /**
  * Chamar para desligar e parar de contar
  */
-export const turnThisOff = () => {
-    discountFromThisAccountTime()
-
-    writeTimeInfo("keepThisApiOn", false)
-    writeTimeInfo("lastStart", null)
-    writeTimeInfo("alreadyStartedThis", false)
-    writeTimeInfo("lastDiscount", null)
+export const turnThisOff = async () => {
+    await discountFromThisAccountTime()
 
     //se é para desligar essa, desligar as outras também (não vai chamar)
-    turnOff()
+    await turnOff()
 
-
-
-    sendTelegramMensage("Desativando API")
+    await sendTelegramMensage("Desativando API")
 }
 
 

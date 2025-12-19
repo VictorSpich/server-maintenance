@@ -1,14 +1,16 @@
 import express from "express"
 import cors from 'cors'
-const app = express()
-import './functions/sendToPhone'
-import './functions/schedule'
-import { routes } from "./config/routes"
-import { configDotenv } from 'dotenv'
-import { baseConfigForTimeOnStart } from "./times/operations"
-import { sendUsagesToPhoneOnStart } from "./utils/time"
 
-//Minha conta para  esse: edge(conta secundária)(spichekoffvictor)
+const app = express()
+import './lib/sendToPhone'
+import './legacy/functions/schedule'
+import {routes} from "./config/routes"
+import {configDotenv} from 'dotenv'
+import {baseConfigForTimeOnStart} from "./legacy/times/operations"
+import "./functions/interval"
+import {Alert} from "./lib/sendAlerts";
+
+//Minha conta para esse: edge(conta secundária)(spichekoffvictor)
 //nome: VictorSpich
 
 
@@ -23,12 +25,14 @@ app.use(express.json())
 
 //evitar que ele conte coisas erradas ao iniciar (produção apenas)
 baseConfigForTimeOnStart()
-// keepThisOn()
 
 
-sendUsagesToPhoneOnStart(true)
+// selectTimer(true).then(r => {})//TODO: TEST_V1
 
 app.use(routes)
 
 
-app.listen(process.env.PORT ?? 2009, () => console.log('Rodando na porta 2009'))
+app.listen(process.env.PORT ?? 2009, () => {
+    Alert.sendUsages(true).then()
+    console.log('Rodando na porta 2009')
+})

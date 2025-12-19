@@ -1,15 +1,24 @@
+# ADD NEW API
+- types/data -> name
+- functions/urls (url+name)
+
+
 # .ENV
 - NOT_SEND == mandar as mensagens? (true só em dev)
 - NOT_REQ == Evita iniciar as requições, usar em testes apenas
 - DEV == ambiente é o de desenvolvimento?
 
-# Todo:
+# TODO REFACTOR
+- Update month (remember to remember when change) 
+- Send Usages on API start and start keep this on
+- 
 
-- Adicionar e testar melhorar no sistema de manter o this on
-- Ver se qunado manda "Desligando servidor", se refere apenas as outra, ou tmabém ao this (off: true)
+
+
+# Todo:
 - Adicionar se aguenta até o fim do mês
 -DB production não tá pegando os dados
-- Ao mudar a API mantida , pelo menos em prod, ele não atualiza o status (na o resto atualiza)
+- Ao mudar a API mantida, pelo menos em prod, ele não atualiza o status (na o resto atualiza)
 - valores maiores que 597 horas, não são salvos
 
 
@@ -30,3 +39,8 @@
 
 ## Bug:
 - Para lidar com usage maior que 597, precisa usar Bigint no usage. Converti para Number, pode perder precisão
+
+
+# Funcionamento
+- Todos as operações básicas de db são feitas no controller
+  - Exceção: Aquelas mudanças que acontecem com ações mais internas, como descontos
